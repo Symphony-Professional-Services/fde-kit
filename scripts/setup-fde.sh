@@ -107,7 +107,18 @@ ai-dlc machine enroll "$PROFILE_SOURCE" \
     --ref "$REF" \
     --apply
 
-# 6. Verify Machine Status
+# 6. Ensure Symphony AI Docs Workspace is cloned
+AI_DOCS_DIR="$REPO_ROOT/../ai-docs"
+if [ ! -d "$AI_DOCS_DIR" ]; then
+    echo "Cloning Symphony AI documentation workspace (ai-docs)..."
+    git clone git@github.com:Symphony-Professional-Services/ai-docs.git "$AI_DOCS_DIR" || {
+        echo "Warning: Could not clone ai-docs. Ensure you have access to Symphony-Professional-Services/ai-docs." >&2
+    }
+else
+    echo "Symphony AI documentation workspace present at $AI_DOCS_DIR"
+fi
+
+# 7. Verify Machine Status
 echo ""
 echo "Verifying machine status:"
 ai-dlc machine status
@@ -118,7 +129,11 @@ echo "FDE profile successfully enrolled!"
 echo ""
 echo "Next steps:"
 echo "1. Run 'ai-dlc setup apply' to provision tools (Node, Claude Code, OpenSpec, etc.)."
-echo "2. In your engagement project repositories, run:"
+echo "2. Set your Atlassian credentials in your shell (~/.zshrc or ~/.bashrc):"
+echo "     export ATLASSIAN_EMAIL=\"your.name@symphony.com\""
+echo "     export ATLASSIAN_API_TOKEN=\"<your-api-token>\""
+echo "3. Use the cloned ai-docs workspace (../ai-docs) to sync with Confluence spaces (AIINT, AIENG, AIOPS)."
+echo "4. In your engagement project repositories, run:"
 echo "     ai-dlc agents render --apply"
 echo "   to generate configuration for Claude Code and Antigravity."
 echo "========================================================"
