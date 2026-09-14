@@ -69,9 +69,9 @@ To allow agent harnesses (Antigravity and Claude Code) to retrieve institutional
 
 | Space Key | Space Name | Purpose |
 | :--- | :--- | :--- |
-| `AIINT` (`AI\|INT`) | AI Integrations | Partner integrations, Symphony connectors, interface specs. |
-| `AIENG` (`AI\|ENG`) | AI Engineering | Core model architectures, Bot Developer Kit (BDK), Agent Developer Kit (ADK), how-tos, design rules. |
-| `AIOPS` (`AI\|OPS`) | AI Operations | Pilot readouts, deployment guides, monitoring, operational plans. |
+| `AIENG` (`AI\|ENG`) | **AI Engineering & Tools** | Engineering tools, developer infrastructure, universal intelligence for the team (setting up and using `ai-dlc`, `fde-kit`, managing `ai-docs`), overall AI-DLC engineering practices, developer rules, and platform toolchains. |
+| `AIINT` (`AI\|INT`) | **AI Intelligence & Solutions** | Implementations, customer solutions, product development, MCP servers, and agent development stored under **engagements** (`fde_engagements/` e.g. `c9_migration`, `visual_analytics`), partner solutions, and pilot readouts. |
+| `AIOPS` (`AI\|OPS`) | **AI Operations & SRE** | Operational execution, SRE bot deployments, cluster infrastructure, MLOps, telemetry, secrets, and fleet management. |
 
 ### Defense-in-Depth Guardrails
 
@@ -178,6 +178,6 @@ ai-dlc work finish trade-extraction
 
 1. **Jira**: AI-DLC transitions `AIENG-104` to `Done` with a comment summarizing the verification digest and commit SHA.
 2. **Confluence Sync**:
-   - The executive readout and operating plan publish to **`AI|OPS`**.
-   - Any reusable BDK/ADK patterns, design decisions, and system rules publish to **`AI|ENG`**.
-   - Custom customer connector specifications publish to **`AI|INT`**.
+   - Engagement solutions, MCP development, customer pilot readouts, and agent implementations publish to **`AI|INT`** under `fde_engagements/`.
+   - Universal engineering tools, AI-DLC/FDE-Kit guidance, `ai-docs` practices, and shared developer rules publish to **`AI|ENG`**.
+   - Deployment runbooks, SRE bot operations, and infrastructure monitoring publish to **`AI|OPS`**.

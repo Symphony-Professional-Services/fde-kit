@@ -125,7 +125,7 @@ To maintain consistency across projects, follow **The Triad**:
 | :--- | :--- | :--- | :--- |
 | **Git Repository** (`docs/`, `openspec/`, `toolkit/`) | Technical specifications, code, eval sets, test scripts, security review, PRDs, ADRs. | **All Engineering & Behavior** | Single source of truth in git version control. |
 | **Jira Cloud** | Task tickets, bugs, pilot milestones, delivery status (`To Do`, `In Progress`, `Done`). | **Status, Priority & Ownership** | AI-DLC links Git branch/commit directly to the Jira Issue ID. |
-| **Confluence Space** | Executive Readouts, Pilot Charters, Stakeholder Memos, high-level client architecture overviews. | **Business Sponsors & Client Facing Stakeholders** | Markdown exported or pushed to Confluence via MCP / script upon release. |
+| **Confluence Space** | **`AI\|INT`**: Product & agent implementations under engagements (`fde_engagements/`), pilot readouts, MCP servers.<br>**`AI\|ENG`**: Engineering tools, universal team intelligence, `ai-dlc`/`fde-kit` setup, `ai-docs` management, developer rules.<br>**`AI\|OPS`**: SRE bot deployment, cluster infrastructure, monitoring, MLOps. | **Business Sponsors, Engineering Practice & Stakeholders** | Markdown exported or pushed to Confluence via `sync-to-confluence` / script upon release. |
 | **Obsidian** (Local) | Daily personal notes, interview raw scratchpads, thought-logs. | **Individual Engineer Personal Journal** | Vault linked locally in `~/.config/ai-dlc/machines/`. Never checked into git. |
 
 ## Direction and contribution
