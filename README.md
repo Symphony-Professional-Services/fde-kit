@@ -65,6 +65,67 @@ The lifecycle is a guide, not a one-way conveyor belt. New evidence can require 
 6. [Enable](stages/06-enable/README.md)
 7. [Expand](stages/07-expand/README.md)
 
+## Team onboarding & fresh computer setup
+
+The FDE toolkit is designed for engineers working across **macOS (Apple Silicon)**, **Ubuntu Linux**, and **Windows (via WSL2)**:
+
+- **macOS (arm64)**: Native support via Homebrew and mise.
+- **Ubuntu / Debian**: Native Linux support via `apt` and mise.
+- **Windows**: Supported through **WSL2 (Ubuntu)**. Native Windows cmd/PowerShell is not supported; run `wsl --install -d Ubuntu` and execute the setup inside your WSL2 environment.
+
+To enroll your machine into the team's FDE profile and install all toolchains in one step:
+
+```sh
+# Clone and run the onboarding script
+git clone git@github.com:Symphony-Professional-Services/fde-kit.git
+cd fde-kit
+./scripts/setup-fde.sh
+ai-dlc setup apply
+```
+
+## Agent harness & workflow rails
+
+### 1. The Steering Rules (`AGENTS.md` and `.agents/rules/ai-dlc.md`)
+
+Every time Antigravity or Claude Code starts a turn, these files instruct the agent:
+- **Check current state** via `.ai-dlc/work/` and `ai-dlc.toml` before taking action.
+- **Never invent** numbers, acceptance criteria, or customer credentials.
+- **Keep durable explanations** in `docs/` and behavioral requirements in `openspec/`.
+- **Complete work only** through `ai-dlc work finish` (which verifies tests, linters, and docs).
+
+### 2. The Rails (Hard Enforcements)
+
+- `ai-dlc project check --required`: Verifies links, schemas, formatting, types, and tests.
+- `ai-dlc work start <id>` / `ai-dlc work finish <id>`: Prevents merging code into main unless associated tracker items, specifications, and evidence-based verification pass.
+- **OpenSpec**: If modifying system behavior, the agent is blocked from writing code until an OpenSpec change (`proposal.md`, `specs/`, `tasks.md`) is recorded.
+
+### 3. The Skills Map & Natural Language Triggers
+
+Both Antigravity and Claude Code automatically index skills from `.agents/skills/` and `.claude/skills/`. The agent activates them based on natural language intent or explicit command:
+
+| Engagement Phase | Tool / Skill | Natural Language Trigger Examples | What It Produces |
+| :--- | :--- | :--- | :--- |
+| **Kickoff / Day Start** | `day-start` | *"What should we work on today?"* / *"What is our project status?"* | Reads open work records, Jira tickets, and suggests next priority. |
+| **Discovery & Scoping** | [`fde-workflow-trace`](agents/skills/fde-workflow-trace/SKILL.md) | *"Help me map this customer's manual invoice flow"* | Produces a baseline [`workflow-trace.md`](toolkit/workflow-trace.md) with steps, pain points, and times. |
+| **Opportunity Triage** | [`fde-opportunity-scorecard`](agents/skills/fde-opportunity-scorecard/SKILL.md) | *"Score this client use case to see if it's viable for AI"* | Produces an [`opportunity-scorecard.md`](toolkit/opportunity-scorecard.md) (Advance, Defer, or Reject). |
+| **Scoping & Boundaries** | [`fde-responsibility-matrix`](agents/skills/fde-responsibility-matrix/SKILL.md) | *"Define what the LLM does vs deterministic code vs human"* | Produces [`responsibility-matrix.md`](toolkit/responsibility-matrix.md) to prevent dangerous unbounded agents. |
+| **Requirements & PRD** | `prd-draft` | *"Draft the PRD for this pilot engagement"* | Writes `docs/design/<feature>-prd.md` with measurable acceptance criteria. |
+| **System Behavior** | `needs-spec` & `spec-from-prd` | *"Spec out the tool calling and data schemas"* | Creates `openspec/changes/<change-id>/` with exact behavior specs. |
+| **QA, Evals & Graders** | [`fde-eval-pack`](agents/skills/fde-eval-pack/SKILL.md) | *"Build test cases and graders for our model output"* | Produces [`evaluation-pack.md`](toolkit/evaluation-pack.md) with assertion suites and baseline scores. |
+| **Security & Governance** | [`fde-security-review`](agents/skills/fde-security-review/SKILL.md) | *"Prepare our security checklist for client review"* | Produces [`ai-security-review.md`](toolkit/ai-security-review.md) covering prompt injection, PII, and logging. |
+| **Wrap-up & Day End** | `day-end` / `handoff` | *"Wrap up today's work"* / *"Prepare handoff for the team"* | Writes a handoff log in `.ai-dlc/work/` and updates ticket statuses. |
+
+### 4. Where to Store Docs & What Syncs Where
+
+To maintain consistency across projects, follow **The Triad**:
+
+| Destination | What Lives Here | Authoritative Source For | Sync Mechanism |
+| :--- | :--- | :--- | :--- |
+| **Git Repository** (`docs/`, `openspec/`, `toolkit/`) | Technical specifications, code, eval sets, test scripts, security review, PRDs, ADRs. | **All Engineering & Behavior** | Single source of truth in git version control. |
+| **Jira Cloud** | Task tickets, bugs, pilot milestones, delivery status (`To Do`, `In Progress`, `Done`). | **Status, Priority & Ownership** | AI-DLC links Git branch/commit directly to the Jira Issue ID. |
+| **Confluence Space** | Executive Readouts, Pilot Charters, Stakeholder Memos, high-level client architecture overviews. | **Business Sponsors & Client Facing Stakeholders** | Markdown exported or pushed to Confluence via MCP / script upon release. |
+| **Obsidian** (Local) | Daily personal notes, interview raw scratchpads, thought-logs. | **Individual Engineer Personal Journal** | Vault linked locally in `~/.config/ai-dlc/machines/`. Never checked into git. |
+
 ## Direction and contribution
 
 The [roadmap](docs/roadmap.md) records what has shipped and what comes next; the [discovery review](docs/reviews/2026-09-07-fde-kit-review.md) records the evidence behind it. [CONTRIBUTING.md](CONTRIBUTING.md) states the quality bar, content conventions, required schemas, and the [AI-DLC](AI-DLC.md) workflow the repository uses. Every numeric rule in the kit is a starting heuristic, not an industry standard.
