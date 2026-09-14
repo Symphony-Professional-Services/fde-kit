@@ -54,7 +54,7 @@ Enterprise AI engagements are gated by security review: prompt injection through
 
 ### F4. The learner path is four links, not a path
 
-The stated goal for this repository includes helping a person become a great AI FDE. There is no curriculum with modules, exercises, and self-assessment; no capstone; no interview preparation; no glossary. The existing skills have practice prompts, which is a good seed, but nothing sequences them.
+The stated goal for this repository includes helping a person become a great AI FDE. There is no curriculum with modules, exercises, and self-assessment; no capstone; no glossary. The existing skills have practice prompts, which is a good seed, but nothing sequences them.
 
 ### F5. Visuals exist only in a deck GitHub cannot render
 
@@ -87,7 +87,7 @@ Both implementation plans list link, schema, slide-count, and whitespace checks 
 ## Open questions
 
 - Q1. Should the kit ship a second worked example in this release or the next? It is the most expensive item and its value depends on the technical guides existing first. Recommendation: next release.
-- Q2. Should interview preparation name specific companies? Recommendation: describe the interview shapes (technical build, LLM system design, customer scenario, evidence discussion) and cite public role descriptions, without claiming knowledge of any company's private process.
+- Q2. Should the capstone scenarios cite specific company practices? Recommendation: describe general enterprise scenarios and cite public role descriptions, without claiming knowledge of any company's private process.
 - Q3. Should the deck grow technical slides? Recommendation: not now; keep it at 16 to 18 slides and let Markdown diagrams carry the technical layer.
 
 ## Smallest useful next investigation

@@ -79,10 +79,10 @@ Score each dimension 1 (developing) to 3 (strong) and multiply by the weight. As
 
 Give the reviewer the artifact set and the rubric, nothing else; if they need you to explain something, that is a finding. Ask for the score, the weakest link in the evidence chain, and one question they would ask as the compliance or security persona. Disagreements about the score are the useful part; record them.
 
-### What a strong capstone lets you say
+### What a strong capstone demonstrates
 
-In an [interview](../interview-preparation.md), a strong capstone lets you answer from artifacts rather than memory: which pattern you chose and what evidence would have changed it; where your judge disagreed with your labels and what you did; why bounded autonomy was held despite passing metrics; and what your result did not prove. Those are the answers evidence-discussion interviews are designed to find missing.
+In field work, a strong capstone lets you operate and communicate from artifacts rather than memory: which pattern you chose and what evidence would have changed it; where your judge disagreed with your labels and what you did; why bounded autonomy was held despite passing metrics; and what your result did not prove.
 
 ## Next
 
-Turn the capstone into practice material with [interview preparation](../interview-preparation.md), then find a real workflow to apply it to. The [roadmap](../../docs/roadmap.md) lists what the kit adds next, including a second worked example and timed scenario drills.
+Apply the capstone learnings to real workflows in customer engagements. The [roadmap](../../docs/roadmap.md) lists what the kit adds next, including a second worked example and timed scenario drills.

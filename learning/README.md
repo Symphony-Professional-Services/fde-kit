@@ -13,7 +13,6 @@ Learning explains the concepts and mental models behind effective Forward Deploy
 ## Becoming an AI FDE
 
 - The [curriculum](curriculum/README.md) sequences the whole kit into seven modules, each producing an artifact, ending in a capstone engagement with a rubric.
-- [Preparing for AI FDE interviews](interview-preparation.md) describes the interview shapes these roles use and drills that reuse the curriculum exercises.
 - The [glossary](glossary.md) defines the terms the kit uses in its own sense.
 
 ## Using this section

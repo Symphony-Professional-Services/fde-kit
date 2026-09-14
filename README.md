@@ -22,7 +22,7 @@ The lifecycle is a guide, not a one-way conveyor belt. New evidence can require 
 
 | Area | Use it to answer | What belongs there |
 | --- | --- | --- |
-| [Learning](learning/README.md) | What should I understand, and why does it matter? | Role, principles, lifecycle, system patterns, curriculum, interview preparation, glossary |
+| [Learning](learning/README.md) | What should I understand, and why does it matter? | Role, principles, lifecycle, system patterns, curriculum, glossary |
 | [Stages](stages/README.md) | What should happen now? | Operational guidance for each lifecycle stage |
 | [Skills](skills/README.md) | How do I perform a capability well? | Method, technical, and customer-craft guides that span stages |
 | [Toolkit](toolkit/README.md) | What can I use right now? | Copy-ready field artifacts |
@@ -34,7 +34,7 @@ The lifecycle is a guide, not a one-way conveyor belt. New evidence can require 
 - **Eleven skill guides.** Four method guides (workflow discovery, human/software/AI system design, evaluation and staged rollout, adoption and feedback), five technical guides (context engineering, tool-using agents, retrieval and grounding, grader design and error analysis, production readiness), and two customer-craft guides (discovery interviewing and facilitation, executive communication).
 - **Thirteen toolkit artifacts.** From the discovery interview guide and stakeholder map, through the pilot charter, responsibility matrix, AI security review, evaluation pack, rollout plan, and operating plan, to the business case, executive readout, and field report.
 - **[AI system patterns](learning/system-patterns.md)** with diagrams: assist; extract, validate, act; retrieval-grounded assistant; tool-using agent; batch classification and routing.
-- **A seven-module [curriculum](learning/curriculum/README.md)** ending in a capstone engagement with a rubric, plus [interview preparation](learning/interview-preparation.md) and a [glossary](learning/glossary.md).
+- **A seven-module [curriculum](learning/curriculum/README.md)** ending in a capstone engagement with a rubric, plus a [glossary](learning/glossary.md).
 - **The [AI Implementation Field Playbook](learning/presentations/fde-overview.html)**, a 16-slide deck. GitHub displays HTML source, so clone the repository and open the file in a browser.
 - **The [AI-assisted invoice-intake engagement](examples/invoice-intake-ai/README.md)**, a fictional worked example showing every stage and the seven original artifacts working together.
 - **Six [agent skills](agents/README.md)** in the AI-DLC convention, so an FDE can run a workflow trace, opportunity scorecard, responsibility matrix, evaluation pack, security review, or field report from inside Claude Code, Codex, or a similar harness.
@@ -45,7 +45,7 @@ The lifecycle is a guide, not a one-way conveyor belt. New evidence can require 
 
 1. Read [What is an FDE?](learning/what-is-an-fde.md), the [operating principles](learning/operating-principles.md), and the [engagement lifecycle](learning/engagement-lifecycle.md).
 2. Work through the [curriculum](learning/curriculum/README.md) in order. Each module produces an artifact; the capstone runs a fictional engagement end to end.
-3. Use [interview preparation](learning/interview-preparation.md) to turn the capstone into evidence you can discuss.
+3. Apply the capstone learnings to real-world customer engagements.
 
 ### Active-engagement path
 

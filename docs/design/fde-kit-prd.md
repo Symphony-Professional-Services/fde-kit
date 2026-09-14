@@ -20,7 +20,7 @@ Secondary readers: delivery leaders and adjacent partners (account, product, res
 | ID | Outcome | Acceptance |
 | --- | --- | --- |
 | O1 | A learner can follow a sequenced curriculum from role understanding to a capstone engagement | `learning/curriculum/` has ordered modules with outcome, prerequisites, study, exercise, assessment, and next; a capstone module with a rubric exists |
-| O2 | A learner can prepare for how AI FDE roles are evaluated | `learning/interview-preparation.md` describes interview shapes with practice drills and cites only public role descriptions |
+| O2 | A learner can assess their AI FDE operational readiness | Curriculum capstone includes practical evaluation rubrics and self-assessment criteria |
 | O3 | A practitioner can build the AI part of a workflow well, not only place it | Skill guides exist for context and prompt design, tool-using agents, retrieval and grounding, grader design and error analysis, and production readiness; each follows the skill schema |
 | O4 | A practitioner can run the customer-facing parts of an engagement | Skill guides for discovery interviewing and facilitation, and executive communication; toolkit artifacts for interview guide, stakeholder map, pilot charter, executive readout, and field report |
 | O5 | A practitioner can enter an enterprise security review prepared | `toolkit/ai-security-review.md` covers data handling, prompt injection, tool permissions, logging and retention, provider terms, and incident response |

@@ -37,7 +37,7 @@ CI (`.github/workflows/verify.yml`) runs the same four scripts on every pull req
 | Customer-craft skill guides | `skills/discovery-interviewing.md`, `skills/executive-communication.md` |
 | Field-craft toolkit | `toolkit/discovery-interview-guide.md`, `toolkit/stakeholder-map.md`, `toolkit/pilot-charter.md`, `toolkit/ai-security-review.md`, `toolkit/executive-readout.md`, `toolkit/field-report.md` |
 | System patterns and diagrams | `learning/system-patterns.md`; Mermaid added to `learning/engagement-lifecycle.md` and `learning/what-is-an-fde.md` |
-| Learning path | `learning/curriculum/README.md` and modules 01 to 07, `learning/interview-preparation.md`, `learning/glossary.md` |
+| Learning path | `learning/curriculum/README.md` and modules 01 to 07, `learning/glossary.md` |
 | Agent skills | `agents/README.md`, `agents/skills/fde-{workflow-trace,opportunity-scorecard,responsibility-matrix,eval-pack,security-review,field-report}/SKILL.md` |
 | Navigation | `README.md`, `learning/README.md`, `skills/README.md`, `toolkit/README.md`, `stages/README.md`, `examples/README.md`, and Related capabilities on all seven stage pages |
 

@@ -24,7 +24,6 @@ fde-kit/
 │   ├── what-is-an-fde.md, operating-principles.md, engagement-lifecycle.md   (existing; gain Mermaid diagrams)
 │   ├── system-patterns.md                (new: reference patterns with diagrams)
 │   ├── glossary.md                       (new)
-│   ├── interview-preparation.md          (new)
 │   ├── curriculum/                       (new: README + 07 modules)
 │   └── presentations/fde-overview.html   (unchanged)
 ├── stages/                               (existing; Related capabilities gain new links)
@@ -63,7 +62,6 @@ fde-kit/
 ### Learning additions
 
 - `learning/curriculum/README.md` and modules `01-role-and-operating-model.md`, `02-discovery-and-framing.md`, `03-system-design.md`, `04-evaluation-engineering.md`, `05-production-and-day-two.md`, `06-customer-craft.md`, `07-capstone.md`. Module schema: Outcome, Prerequisites, Study, Exercise, Assessment, Next.
-- `learning/interview-preparation.md`: interview shapes (technical build, LLM system design, customer scenario, evidence discussion, behavioral), drills that reuse curriculum exercises, and a self-scoring rubric.
 - `learning/glossary.md`: terms used across the kit with one-sentence definitions and links.
 - `learning/system-patterns.md`: assist, extract-validate-act, retrieval-grounded assistant, tool-using agent, batch classification and routing. Each with a Mermaid diagram, when to use, boundary and evaluation notes, and links to skills.
 - Mermaid diagrams added inline to `learning/engagement-lifecycle.md` (lifecycle loop) and `learning/what-is-an-fde.md` (operating model and artifacts).
@@ -78,7 +76,7 @@ AI-DLC adopted with the generic preset and `scm` plus `agent-client` capabilitie
 
 ## User journey and states
 
-Learner: `README.md` → `learning/curriculum/README.md` → modules in order → capstone → `interview-preparation.md`. Every module links the guides and artifacts it uses, so the learner reads the practitioner material in a sequence.
+Learner: `README.md` → `learning/curriculum/README.md` → modules in order → capstone. Every module links the guides and artifacts it uses, so the learner reads the practitioner material in a sequence.
 
 Practitioner: `README.md` → stage page → skill guide → toolkit artifact → agent skill when working in a harness → example for comparison.
 

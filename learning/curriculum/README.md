@@ -37,8 +37,4 @@ As a starting heuristic, not an industry standard: six to eight weeks at five to
 
 It does not replace building a real system. Written artifacts can be internally consistent and still wrong about how a model, a retrieval index, or an enterprise connector behaves. Every module therefore says where to practice with real tooling: a model API with structured output, a small retrieval index over documents you can inspect, a tracing store you can query, and a case set you run more than once. If you cannot run a model, modules 03 to 05 say what to write instead; your self-score should say so.
 
-It does not certify anyone; a strong capstone score is evidence to show a reviewer or interviewer, not a credential. And it does not teach one vendor's software development kit (SDK): the kit names mechanisms, vendor documentation teaches the API calls.
-
-## Relation to interview preparation
-
-[Interview preparation](../interview-preparation.md) describes the shapes AI FDE interviews take (technical build, large language model (LLM) system design, customer scenario, evidence discussion, behavioral) and reuses the curriculum exercises as drills. Do the curriculum first: the drills assume you have a responsibility matrix, an evaluation pack, and a readout of your own to talk from, because evidence discussions expose rehearsed answers quickly. Module 07 ends with what a strong capstone lets you say in each interview shape.
+It does not certify anyone; a strong capstone score is evidence of practical understanding, not a credential. And it does not teach one vendor's software development kit (SDK): the kit names mechanisms, vendor documentation teaches the API calls.

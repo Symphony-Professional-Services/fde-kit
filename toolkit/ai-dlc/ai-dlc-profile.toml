@@ -1,0 +1,25 @@
+schema = 4
+profile_id = "fde"
+
+[modules]
+include = [
+  "core",
+  "python",
+  "node",
+  "docker",
+  "vscode",
+  "claude-code",
+  "openspec",
+  "obsidian",
+]
+
+[preferences]
+headless = false
+
+[roles]
+specs = "openspec"
+tracker = "github-issues"
+knowledge = "obsidian"
+scm = "github"
+deploy = "none"
+agent-client = ["claude-code", "antigravity"]
