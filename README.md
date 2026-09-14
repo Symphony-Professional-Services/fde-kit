@@ -83,6 +83,8 @@ cd fde-kit
 ai-dlc setup apply
 ```
 
+For detailed credential setup (API tokens), Confluence space scoping (`AI|INT`, `AI|ENG`, `AI|OPS`), and multi-tier Jira/GitHub sync, see the [Team Onboarding & Multi-Tier Workflow Setup Guide](docs/runbooks/team-setup-guide.md).
+
 ## Agent harness & workflow rails
 
 ### 1. The Steering Rules (`AGENTS.md` and `.agents/rules/ai-dlc.md`)
