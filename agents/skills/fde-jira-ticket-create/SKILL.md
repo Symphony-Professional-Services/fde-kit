@@ -16,6 +16,7 @@ Create structured Tier 1 strategic engagement anchors and delivery milestones in
 ## Obtain first
 
 Collect these required parameters before calling any tool or API:
+- **Authentication Credentials**: Either a generated Atlassian API Token (`--api-token <KEY> --email <EMAIL>` or `JIRA_API_TOKEN`/`JIRA_USER_EMAIL` in `.env`) or an OAuth 2.0 Bearer Token (`--oauth-token <TOKEN>` or `JIRA_OAUTH_TOKEN` in `.env`).
 - **Engagement Title & Slug**: Formatted as `[<Slug>] <Full Engagement Name>`.
 - **Target Jira Issue Type**: `Epic` (for full engagement anchors) or `Story` (for delivery slices).
 - **Solution Workstream**: One of the standard MSS options: `Voice & Cloud9 Solutions`, `AI, RAG & NL Querying`, `Task Automation Bots`, `Federation & Relays`, `Enhanced Directory Solutions`, `Platform Compliance & Alerts`, `Client Data Operations`, `DART`, `Core Infra & Ops`.

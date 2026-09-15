@@ -16,6 +16,7 @@ Audit Jira tickets on board 2236 against FDE quality gates and prompt users for 
 ## Obtain first
 
 - Target ticket key (e.g. `MSS-1810`, `MSS-1880`).
+- Access credentials: Generated API Key (`--api-token <KEY> --email <EMAIL>`) or OAuth 2.0 Bearer Token (`--oauth-token <TOKEN>` or `JIRA_OAUTH_TOKEN` in `.env`).
 - Access to Jira Cloud API via `scripts/jira_ticket.py`.
 
 ## Procedure
