@@ -47,7 +47,12 @@ def get_jira_auth_header(
     api_token: Optional[str] = None,
     email: Optional[str] = None,
 ) -> str:
-    """Resolve authorization header from OAuth 2.0 Bearer token, API Key Basic Auth, or environment."""
+    """Resolve authorization header.
+    
+    Atlassian API tokens are organization-wide across perzoinc.atlassian.net and
+    authenticate both Jira and Confluence. This function automatically detects
+    any shared Atlassian/Confluence/Jira credentials in the environment or .env.
+    """
     env = load_env()
 
     # 1. Explicit CLI arguments
@@ -58,56 +63,53 @@ def get_jira_auth_header(
         encoded = base64.b64encode(f"{email.strip()}:{api_token.strip()}".encode()).decode()
         return f"Basic {encoded}"
 
-    # 2. Jira-specific OAuth token
-    jira_oauth = (
+    # 2. Shared Atlassian API Token (works for both Jira & Confluence)
+    atlassian_email = (
+        os.environ.get("ATLASSIAN_USER_EMAIL")
+        or env.get("ATLASSIAN_USER_EMAIL")
+        or os.environ.get("JIRA_USER_EMAIL")
+        or env.get("JIRA_USER_EMAIL")
+        or os.environ.get("CONFLUENCE_EMAIL")
+        or env.get("CONFLUENCE_EMAIL")
+    )
+    atlassian_token = (
+        os.environ.get("ATLASSIAN_API_TOKEN")
+        or env.get("ATLASSIAN_API_TOKEN")
+        or os.environ.get("JIRA_API_TOKEN")
+        or env.get("JIRA_API_TOKEN")
+        or os.environ.get("CONFLUENCE_API_TOKEN")
+        or env.get("CONFLUENCE_API_TOKEN")
+    )
+    if atlassian_email and atlassian_token:
+        encoded = base64.b64encode(f"{atlassian_email.strip()}:{atlassian_token.strip()}".encode()).decode()
+        return f"Basic {encoded}"
+
+    # 3. Dedicated OAuth Bearer Token in environment
+    oauth_env = (
         os.environ.get("JIRA_OAUTH_TOKEN")
         or os.environ.get("ATLASSIAN_OAUTH_TOKEN")
         or env.get("JIRA_OAUTH_TOKEN")
         or env.get("ATLASSIAN_OAUTH_TOKEN")
         or env.get("OAUTH_ACCESS_TOKEN")
     )
-    if jira_oauth:
-        token = jira_oauth.strip()
+    if oauth_env:
+        token = oauth_env.strip()
         return token if token.lower().startswith("bearer ") else f"Bearer {token}"
 
-    # 3. Jira-specific API Key / Basic Auth
-    jira_email = (
-        os.environ.get("JIRA_USER_EMAIL")
-        or env.get("JIRA_USER_EMAIL")
-        or os.environ.get("ATLASSIAN_USER_EMAIL")
-        or env.get("ATLASSIAN_USER_EMAIL")
+    # 4. Raw Precomputed Auth Header
+    raw_header = (
+        env.get("JIRA_AUTHORIZATION_HEADER")
+        or env.get("CONFLUENCE_AUTHORIZATION_HEADER")
+        or env.get("JIRA_BASIC_AUTH_B64")
+        or env.get("CONFLUENCE_BASIC_AUTH_B64")
     )
-    jira_token = (
-        os.environ.get("JIRA_API_TOKEN")
-        or env.get("JIRA_API_TOKEN")
-        or os.environ.get("ATLASSIAN_API_TOKEN")
-        or env.get("ATLASSIAN_API_TOKEN")
-    )
-    if jira_email and jira_token:
-        encoded = base64.b64encode(f"{jira_email.strip()}:{jira_token.strip()}".encode()).decode()
-        return f"Basic {encoded}"
-
-    # 4. Jira-specific Raw Header / B64
-    jira_raw = env.get("JIRA_AUTHORIZATION_HEADER") or env.get("JIRA_BASIC_AUTH_B64")
-    if jira_raw:
-        val = jira_raw.strip()
-        return val if val.lower().startswith("basic ") or val.lower().startswith("bearer ") else f"Basic {val}"
-
-    # 5. Fallback to Confluence credentials if Jira-specific ones are not set
-    conf_email = os.environ.get("CONFLUENCE_EMAIL") or env.get("CONFLUENCE_EMAIL")
-    conf_token = os.environ.get("CONFLUENCE_API_TOKEN") or env.get("CONFLUENCE_API_TOKEN")
-    if conf_email and conf_token:
-        encoded = base64.b64encode(f"{conf_email.strip()}:{conf_token.strip()}".encode()).decode()
-        return f"Basic {encoded}"
-
-    conf_raw = env.get("CONFLUENCE_AUTHORIZATION_HEADER") or env.get("CONFLUENCE_BASIC_AUTH_B64")
-    if conf_raw:
-        val = conf_raw.strip()
+    if raw_header:
+        val = raw_header.strip()
         return val if val.lower().startswith("basic ") or val.lower().startswith("bearer ") else f"Basic {val}"
 
     print(
-        "ERROR: No valid Jira credentials found. Provide either:\n"
-        "  - Generated API Key: pass --api-token <KEY> --email <EMAIL> or set JIRA_API_TOKEN and JIRA_USER_EMAIL\n"
+        "ERROR: No valid Atlassian credentials found. Provide either:\n"
+        "  - Shared Atlassian API Token: set CONFLUENCE_API_TOKEN and CONFLUENCE_EMAIL (or ATLASSIAN_* / JIRA_*)\n"
         "  - OAuth 2.0 Bearer: pass --oauth-token <TOKEN> or set JIRA_OAUTH_TOKEN",
         file=sys.stderr,
     )
@@ -375,50 +377,14 @@ def validate_issue(
     api_token: Optional[str] = None,
     email: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Validates an existing ticket against FDE quality standards."""
+    """Validates an existing ticket against FDE and self-initiative compliance standards."""
     data = get_issue(issue_key, base_url=base_url, oauth_token=oauth_token, api_token=api_token, email=email)
     fields = data.get("fields", {})
 
-    findings: List[str] = []
-    warnings: List[str] = []
+    is_valid, findings, warnings = preflight_check(data)
 
-    # 1. Check Summary
     summary = fields.get("summary", "")
-    if not summary.startswith("[") or "]" not in summary:
-        warnings.append("Summary does not follow standard tag prefix `[Engagement] Title` format.")
-
-    # 2. Check Labels
     labels = fields.get("labels", [])
-    if "fde-engagement" not in labels:
-        findings.append("Missing required label `fde-engagement`.")
-    if not any(l.startswith("stage-") for l in labels):
-        warnings.append("Missing lifecycle stage label (e.g. `stage-01-discover`).")
-
-    # 3. Check Workstream & Engagement Type
-    workstream = fields.get("customfield_19146")
-    if not workstream:
-        findings.append("Missing custom field: Solution Workstream.")
-
-    tshirt = fields.get("customfield_12201")
-    if not tshirt:
-        warnings.append("Missing custom field: T-Shirt Size (flagged on board).")
-
-    # 4. Check Description ADF structure
-    desc = fields.get("description")
-    if not desc:
-        findings.append("Description is empty.")
-    else:
-        headings = []
-        for item in desc.get("content", []):
-            if item.get("type") == "heading":
-                for text_node in item.get("content", []):
-                    headings.append(text_node.get("text", "").lower())
-
-        required_headings = ["overview", "primary ask", "contacts", "links"]
-        for rh in required_headings:
-            if not any(rh in h for h in headings):
-                findings.append(f"Description missing standard section heading: '{rh.title()}'.")
-
     status = fields.get("status", {}).get("name")
     assignee = fields.get("assignee", {}).get("displayName") if fields.get("assignee") else "Unassigned"
 
@@ -427,7 +393,7 @@ def validate_issue(
         "summary": summary,
         "status": status,
         "assignee": assignee,
-        "valid": len(findings) == 0,
+        "valid": is_valid,
         "findings": findings,
         "warnings": warnings,
     }
