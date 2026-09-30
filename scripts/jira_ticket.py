@@ -19,6 +19,12 @@ from typing import Any, Dict, List, Optional
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
+# Records which file each loaded .env key came from, for auth diagnostics.
+ENV_ORIGIN: Dict[str, str] = {}
+# Human-readable description of the credential chosen by get_jira_auth_header().
+AUTH_SOURCE = "unresolved"
+
+
 def load_env() -> Dict[str, str]:
     """Load configuration from .env in repo root or fallback to ai-docs."""
     env: Dict[str, str] = {}
@@ -29,6 +35,7 @@ def load_env() -> Dict[str, str]:
             if line and not line.startswith("#") and "=" in line:
                 k, _, v = line.partition("=")
                 env[k.strip()] = v.strip().strip('"').strip("'")
+                ENV_ORIGIN[k.strip()] = str(env_file)
 
     ai_docs_path = Path(env.get("AI_DOCS_REPO_PATH", "/Users/sean.koval@symphony.com/repos/work/tools/ai-docs"))
     if ai_docs_path.exists():
@@ -38,7 +45,9 @@ def load_env() -> Dict[str, str]:
                 line = line.strip()
                 if line and not line.startswith("#") and "=" in line:
                     k, _, v = line.partition("=")
-                    env.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+                    if k.strip() not in env:
+                        env[k.strip()] = v.strip().strip('"').strip("'")
+                        ENV_ORIGIN[k.strip()] = str(env_key_file)
     return env
 
 
@@ -48,62 +57,59 @@ def get_jira_auth_header(
     email: Optional[str] = None,
 ) -> str:
     """Resolve authorization header.
-    
+
     Atlassian API tokens are organization-wide across perzoinc.atlassian.net and
     authenticate both Jira and Confluence. This function automatically detects
     any shared Atlassian/Confluence/Jira credentials in the environment or .env.
     """
+    global AUTH_SOURCE
     env = load_env()
+    _picked: List[str] = []
+
+    def _pick(*keys: str) -> Optional[str]:
+        """Return the first key set in the shell or .env files, remembering where it came from."""
+        for k in keys:
+            if os.environ.get(k):
+                _picked.append(f"{k} (shell environment)")
+                return os.environ[k]
+            if env.get(k):
+                _picked.append(f"{k} ({ENV_ORIGIN.get(k, '.env')})")
+                return env[k]
+        return None
 
     # 1. Explicit CLI arguments
     if oauth_token:
+        AUTH_SOURCE = "--oauth-token (Bearer)"
         token = oauth_token.strip()
         return token if token.lower().startswith("bearer ") else f"Bearer {token}"
     if api_token and email:
+        AUTH_SOURCE = "--api-token/--email (Basic)"
         encoded = base64.b64encode(f"{email.strip()}:{api_token.strip()}".encode()).decode()
         return f"Basic {encoded}"
 
     # 2. Shared Atlassian API Token (works for both Jira & Confluence)
-    atlassian_email = (
-        os.environ.get("ATLASSIAN_USER_EMAIL")
-        or env.get("ATLASSIAN_USER_EMAIL")
-        or os.environ.get("JIRA_USER_EMAIL")
-        or env.get("JIRA_USER_EMAIL")
-        or os.environ.get("CONFLUENCE_EMAIL")
-        or env.get("CONFLUENCE_EMAIL")
-    )
-    atlassian_token = (
-        os.environ.get("ATLASSIAN_API_TOKEN")
-        or env.get("ATLASSIAN_API_TOKEN")
-        or os.environ.get("JIRA_API_TOKEN")
-        or env.get("JIRA_API_TOKEN")
-        or os.environ.get("CONFLUENCE_API_TOKEN")
-        or env.get("CONFLUENCE_API_TOKEN")
-    )
+    atlassian_email = _pick("ATLASSIAN_USER_EMAIL", "JIRA_USER_EMAIL", "CONFLUENCE_EMAIL")
+    atlassian_token = _pick("ATLASSIAN_API_TOKEN", "JIRA_API_TOKEN", "CONFLUENCE_API_TOKEN")
     if atlassian_email and atlassian_token:
+        AUTH_SOURCE = "API token (Basic) from " + ", ".join(_picked)
         encoded = base64.b64encode(f"{atlassian_email.strip()}:{atlassian_token.strip()}".encode()).decode()
         return f"Basic {encoded}"
 
     # 3. Dedicated OAuth Bearer Token in environment
-    oauth_env = (
-        os.environ.get("JIRA_OAUTH_TOKEN")
-        or os.environ.get("ATLASSIAN_OAUTH_TOKEN")
-        or env.get("JIRA_OAUTH_TOKEN")
-        or env.get("ATLASSIAN_OAUTH_TOKEN")
-        or env.get("OAUTH_ACCESS_TOKEN")
-    )
+    _picked.clear()
+    oauth_env = _pick("JIRA_OAUTH_TOKEN", "ATLASSIAN_OAUTH_TOKEN", "OAUTH_ACCESS_TOKEN")
     if oauth_env:
+        AUTH_SOURCE = "OAuth (Bearer) from " + ", ".join(_picked)
         token = oauth_env.strip()
         return token if token.lower().startswith("bearer ") else f"Bearer {token}"
 
     # 4. Raw Precomputed Auth Header
-    raw_header = (
-        env.get("JIRA_AUTHORIZATION_HEADER")
-        or env.get("CONFLUENCE_AUTHORIZATION_HEADER")
-        or env.get("JIRA_BASIC_AUTH_B64")
-        or env.get("CONFLUENCE_BASIC_AUTH_B64")
+    _picked.clear()
+    raw_header = _pick(
+        "JIRA_AUTHORIZATION_HEADER", "CONFLUENCE_AUTHORIZATION_HEADER", "JIRA_BASIC_AUTH_B64", "CONFLUENCE_BASIC_AUTH_B64"
     )
     if raw_header:
+        AUTH_SOURCE = "precomputed Authorization header from " + ", ".join(_picked)
         val = raw_header.strip()
         return val if val.lower().startswith("basic ") or val.lower().startswith("bearer ") else f"Basic {val}"
 
@@ -116,7 +122,90 @@ def get_jira_auth_header(
     sys.exit(1)
 
 
-DEFAULT_JIRA_BASE_URL = "https://perzoinc.atlassian.net/rest/api/3"
+DEFAULT_JIRA_SITE = "https://perzoinc.atlassian.net"
+DEFAULT_JIRA_BASE_URL = f"{DEFAULT_JIRA_SITE}/rest/api/3"
+ATLASSIAN_GATEWAY = "https://api.atlassian.com"
+
+
+def _lookup_cloud_id(auth_hdr: str) -> str:
+    """Find the cloud ID for DEFAULT_JIRA_SITE via the OAuth accessible-resources endpoint."""
+    req = urllib.request.Request(
+        f"{ATLASSIAN_GATEWAY}/oauth/token/accessible-resources",
+        headers={"Authorization": auth_hdr, "Accept": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            resources = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        print(
+            f"ERROR: OAuth token rejected by {ATLASSIAN_GATEWAY} ({e.code}). Source: {AUTH_SOURCE}.\n"
+            "  Refresh the token, or set JIRA_CLOUD_ID / JIRA_BASE_URL explicitly.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    for r in resources:
+        if r.get("url", "").rstrip("/") == DEFAULT_JIRA_SITE:
+            return r["id"]
+    if resources:
+        return resources[0]["id"]
+    print("ERROR: OAuth token has no accessible Atlassian sites.", file=sys.stderr)
+    sys.exit(1)
+
+
+def resolve_base_url(base_url: Optional[str], auth_hdr: str) -> str:
+    """Pick the REST base URL for the credential type.
+
+    API tokens (Basic) work against the site URL. OAuth 2.0 (3LO) Bearer tokens only
+    work through the gateway: https://api.atlassian.com/ex/jira/<cloudId>/rest/api/3.
+    """
+    explicit = base_url or os.environ.get("JIRA_BASE_URL") or load_env().get("JIRA_BASE_URL")
+    if explicit:
+        return explicit.rstrip("/")
+    if auth_hdr.lower().startswith("bearer "):
+        cloud_id = os.environ.get("JIRA_CLOUD_ID") or load_env().get("JIRA_CLOUD_ID") or _lookup_cloud_id(auth_hdr)
+        return f"{ATLASSIAN_GATEWAY}/ex/jira/{cloud_id}/rest/api/3"
+    return DEFAULT_JIRA_BASE_URL
+
+
+def verify_auth(auth_hdr: str, endpoint_base: str) -> Dict[str, Any]:
+    """Fail fast on bad credentials.
+
+    Jira treats rejected credentials as anonymous, so a later create call reports a
+    misleading "project doesn't exist or you don't have permission" instead of 401.
+    """
+    req = urllib.request.Request(
+        f"{endpoint_base}/myself",
+        headers={"Authorization": auth_hdr, "Accept": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            me = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")[:200]
+        print(
+            f"ERROR: Atlassian authentication failed ({e.code}) against {endpoint_base}.\n"
+            f"  Credential source: {AUTH_SOURCE}\n"
+            f"  Response: {body}\n"
+            "  The token is likely expired, revoked, or scoped without Jira access. Create a new classic\n"
+            "  API token at https://id.atlassian.com/manage-profile/security/api-tokens and update the source above.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    print(f"Authenticated as {me.get('displayName')} via {AUTH_SOURCE}", file=sys.stderr)
+    return me
+
+
+def jira_session(
+    base_url: Optional[str] = None,
+    oauth_token: Optional[str] = None,
+    api_token: Optional[str] = None,
+    email: Optional[str] = None,
+) -> tuple[str, str]:
+    """Resolve credentials and base URL, verify them, and return (auth_header, endpoint_base)."""
+    auth_hdr = get_jira_auth_header(oauth_token=oauth_token, api_token=api_token, email=email)
+    endpoint_base = resolve_base_url(base_url, auth_hdr)
+    verify_auth(auth_hdr, endpoint_base)
+    return auth_hdr, endpoint_base
 
 
 # MSS Custom Field Mappings
@@ -284,6 +373,7 @@ def create_issue(
     email: Optional[str] = None,
     dry_run: bool = False,
     skip_hook: bool = False,
+    parent: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Creates an issue in Jira MSS."""
     # Type ID mapping
@@ -306,6 +396,8 @@ def create_issue(
         fields["customfield_12201"] = {"id": TSHIRT_MAP[tshirt]}
     if customer:
         fields["customfield_13100"] = customer
+    if parent:
+        fields["parent"] = {"key": parent}
 
     payload = {"fields": fields}
 
@@ -327,9 +419,7 @@ def create_issue(
         print(json.dumps(payload, indent=2))
         return {"dry_run": True, "payload": payload}
 
-    auth_hdr = get_jira_auth_header(oauth_token=oauth_token, api_token=api_token, email=email)
-
-    endpoint_base = base_url or os.environ.get("JIRA_BASE_URL") or DEFAULT_JIRA_BASE_URL
+    auth_hdr, endpoint_base = jira_session(base_url, oauth_token=oauth_token, api_token=api_token, email=email)
     req = urllib.request.Request(
         f"{endpoint_base}/issue",
         data=json.dumps(payload).encode("utf-8"),
@@ -356,8 +446,7 @@ def get_issue(
     email: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Fetches full issue details from Jira."""
-    auth_hdr = get_jira_auth_header(oauth_token=oauth_token, api_token=api_token, email=email)
-    endpoint_base = base_url or os.environ.get("JIRA_BASE_URL") or DEFAULT_JIRA_BASE_URL
+    auth_hdr, endpoint_base = jira_session(base_url, oauth_token=oauth_token, api_token=api_token, email=email)
     req = urllib.request.Request(
         f"{endpoint_base}/issue/{issue_key}",
         headers={"Authorization": auth_hdr, "Accept": "application/json"},
@@ -417,6 +506,44 @@ def validate_issue(
     return result
 
 
+def add_remote_link(
+    issue_key: str,
+    url: str,
+    title: str,
+    base_url: Optional[str] = None,
+    oauth_token: Optional[str] = None,
+    api_token: Optional[str] = None,
+    email: Optional[str] = None,
+) -> bool:
+    """Attach a native Jira Web Link (Remote Link) to an issue."""
+    auth_hdr, endpoint_base = jira_session(base_url, oauth_token=oauth_token, api_token=api_token, email=email)
+    payload = {
+        "object": {
+            "url": url,
+            "title": title,
+        }
+    }
+    req = urllib.request.Request(
+        f"{endpoint_base}/issue/{issue_key}/remotelink",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Authorization": auth_hdr, "Content-Type": "application/json", "Accept": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            if resp.status in (200, 201):
+                print(f"SUCCESS: Attached remote link to {issue_key}: '{title}' -> {url}")
+                return True
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        print(f"ERROR: Failed to add remote link ({e.code}): {body}", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"ERROR: Failed to add remote link: {e}", file=sys.stderr)
+        return False
+    return False
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Jira MSS Ticket Automation")
     parser.add_argument("--oauth-token", help="OAuth 2.0 Bearer access token")
@@ -443,6 +570,7 @@ if __name__ == "__main__":
     create_p.add_argument("--tshirt", default="L", choices=list(TSHIRT_MAP.keys()))
     create_p.add_argument("--customer", default="Cloud9 ProServ / Symphony FDE")
     create_p.add_argument("--dry-run", action="store_true", help="Preview payload without calling API")
+    create_p.add_argument("--parent", help="Parent Epic key for Stories (e.g. MSS-1891)")
     create_p.add_argument("--skip-hook", action="store_true", help="Skip preflight compliance hook")
 
     # validate
@@ -452,6 +580,12 @@ if __name__ == "__main__":
     # lint
     lint_p = subparsers.add_parser("lint")
     lint_p.add_argument("file", help="Path to JSON payload file to validate against preflight hook")
+
+    # link
+    link_p = subparsers.add_parser("link")
+    link_p.add_argument("key", help="Jira issue key (e.g. MSS-1891)")
+    link_p.add_argument("--url", required=True, help="Target URL (e.g. GitHub Project or Repo)")
+    link_p.add_argument("--title", required=True, help="Display title for the link")
 
     args = parser.parse_args()
 
@@ -480,6 +614,7 @@ if __name__ == "__main__":
             email=args.email,
             dry_run=args.dry_run,
             skip_hook=args.skip_hook,
+            parent=args.parent,
         )
     elif args.command == "validate":
         validate_issue(
@@ -504,5 +639,15 @@ if __name__ == "__main__":
                 print(f"  - {err}")
             sys.exit(1)
         print(f"✅ Payload in '{args.file}' PASSED preflight compliance check.")
+    elif args.command == "link":
+        add_remote_link(
+            issue_key=args.key,
+            url=args.url,
+            title=args.title,
+            base_url=args.base_url,
+            oauth_token=args.oauth_token,
+            api_token=args.api_token,
+            email=args.email,
+        )
     else:
         parser.print_help()

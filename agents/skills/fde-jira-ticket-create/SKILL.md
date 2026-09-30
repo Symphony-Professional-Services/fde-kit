@@ -38,7 +38,7 @@ Select the appropriate track before assembling the ticket payload:
 
 ## Common Parameters
 
-- **Authentication Credentials**: Either a generated Atlassian API Token (`--api-token <KEY> --email <EMAIL>` or `JIRA_API_TOKEN`/`JIRA_USER_EMAIL` in `.env`) or an OAuth 2.0 Bearer Token (`--oauth-token <TOKEN>` or `JIRA_OAUTH_TOKEN` in `.env`).
+- **Authentication Credentials**: Either a classic Atlassian API Token or an OAuth 2.0 Bearer Token. The script checks, in order: CLI flags (`--api-token <KEY> --email <EMAIL>` or `--oauth-token <TOKEN>`); `ATLASSIAN_*`, `JIRA_*` or `CONFLUENCE_*` variables in the shell or the repo `.env`; then the shared fallback `ai-docs/.env.key`. It verifies the credential against `/myself` before submitting and reports which source it used. OAuth tokens are routed through `https://api.atlassian.com/ex/jira/<cloudId>` automatically (override with `JIRA_CLOUD_ID` or `JIRA_BASE_URL`).
 - **Engagement Title & Slug**: Formatted as `[<Slug>] <Full Engagement Name>`.
 - **Target Jira Issue Type**: `Epic` (for full anchors) or `Story` (for delivery slices).
 - **Solution Workstream**: One of the standard MSS options: `Core Infra & Ops`, `Voice & Cloud9 Solutions`, `AI, RAG & NL Querying`, `Task Automation Bots`, `Federation & Relays`, `Enhanced Directory Solutions`, `Platform Compliance & Alerts`, `Client Data Operations`, `DART`.
@@ -57,7 +57,7 @@ Select the appropriate track before assembling the ticket payload:
    - `Acceptance & Stage Exit Criteria`: Bulleted verifiable assertions.
 2. **Execute Pre-Flight Compliance Hook**: Run `python3 scripts/jira_ticket.py create --dry-run` with your parameters. The built-in compliance hook will validate the payload against `toolkit/schemas/jira-ticket-schema.json`.
 3. **Resolve Any Violations**: If the hook fails, remediate missing headings, missing fields, or incorrect prefixes before proceeding.
-4. **Submit Ticket**: Call `python3 scripts/jira_ticket.py create` without `--dry-run` to post the ticket to Board 2236.
+4. **Submit Ticket**: Call `python3 scripts/jira_ticket.py create` without `--dry-run` to post the ticket to Board 2236. For Stories, pass `--parent <EPIC-KEY>` to attach them to the engagement Epic.
 5. **Bind Local Configuration**: Record the returned issue key (e.g. `MSS-1890`) in `ai-dlc.toml` under `[project.fde.jira_epic]` or work records.
 
 ## Output
