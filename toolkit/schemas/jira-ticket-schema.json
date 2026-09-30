@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "JiraTicketComplianceSchema",
+  "description": "Compliance schema for FDE engagements and internal initiatives on MSS Board 2236",
+  "type": "object",
+  "required": [
+    "project",
+    "issuetype",
+    "summary",
+    "description",
+    "labels",
+    "customfield_19146",
+    "customfield_19140",
+    "customfield_12201",
+    "customfield_13100"
+  ],
+  "properties": {
+    "project": {
+      "type": "object",
+      "required": ["key"],
+      "properties": {
+        "key": { "const": "MSS" }
+      }
+    },
+    "issuetype": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "enum": ["6", "7", "5", "10501"] }
+      }
+    },
+    "summary": {
+      "type": "string",
+      "pattern": "^\\[[a-zA-Z0-9_ -]+\\]\\s.+$"
+    },
+    "labels": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 2
+    },
+    "customfield_19146": {
+      "description": "Solution Workstream",
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "enum": [
+            "36564",
+            "36515",
+            "36512",
+            "36513",
+            "36514",
+            "36566",
+            "36516",
+            "36517",
+            "36561",
+            "36562",
+            "36563",
+            "40238"
+          ]
+        }
+      }
+    },
+    "customfield_19140": {
+      "description": "Engagement Type",
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "enum": ["36494", "36495", "36496", "36497", "40239"] }
+      }
+    },
+    "customfield_12201": {
+      "description": "T-Shirt Size",
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "enum": ["11004", "11003", "11002", "11001", "11000", "25840"] }
+      }
+    },
+    "customfield_13100": {
+      "description": "Customer Name or Internal Unit",
+      "type": "string",
+      "minLength": 3
+    }
+  },
+  "oneOf": [
+    {
+      "title": "Client Engagement Track",
+      "description": "Client-facing engagement with external stakeholder or formal ProServ sponsor",
+      "properties": {
+        "labels": {
+          "type": "array",
+          "contains": { "const": "fde-engagement" }
+        }
+      }
+    },
+    {
+      "title": "Self-Initiative / Internal Tooling Track",
+      "description": "Internal developer tool, MCP server, agent harness, or CLI refinement",
+      "properties": {
+        "labels": {
+          "type": "array",
+          "contains": { "const": "self-initiative" }
+        },
+        "customfield_13100": {
+          "type": "string",
+          "pattern": "^(Internal|Symphony FDE|Self).*$"
+        }
+      }
+    }
+  ]
+}
