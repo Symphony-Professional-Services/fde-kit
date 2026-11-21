@@ -1,0 +1,52 @@
+# Symphony ADK bundle build stage.
+#
+# Paste this ABOVE your runtime stage, and the COPY --from at the bottom INTO your
+# runtime stage after it copies application source.
+#
+# Why a build stage at all: @symphony-ui/adk is published as CommonJS only (no UMD /
+# IIFE / browser build), so it cannot be loaded from a <script> tag. esbuild bundles
+# it together with our controller and view into two self-contained IIFEs.
+#
+# Placeholders: {{APP_ID}} {{ADK_SRC_DIR}}   e.g. ADK_SRC_DIR=src/interfaces/web/adk
+
+FROM node:22-slim AS adk-build
+
+WORKDIR /build
+
+# package.json first so dependency install is cached independently of source edits.
+COPY {{ADK_SRC_DIR}}/package.json ./
+RUN npm install --no-audit --no-fund
+
+COPY {{ADK_SRC_DIR}}/controller.js {{ADK_SRC_DIR}}/view.js ./
+
+# Two entrypoints, both required:
+#   controller -> registers the app, owns Circle of Trust
+#   view       -> calls ADK.connectView(), without which every module opened by the
+#                 controller renders as an endless spinner
+RUN mkdir -p /static && \
+    npx esbuild controller.js --bundle --format=iife --target=es2018 \
+        --minify --sourcemap --outfile=/static/{{APP_ID}}-controller.js && \
+    npx esbuild view.js --bundle --format=iife --target=es2018 \
+        --minify --sourcemap --outfile=/static/{{APP_ID}}-view.js
+
+
+# ---------------------------------------------------------------------------
+# ... your existing runtime stage ...
+# ---------------------------------------------------------------------------
+# Place this AFTER the COPY that brings in your application source, so the CI-built
+# bundles always win over anything that leaked in from the build context.
+#
+# COPY --from=adk-build \
+#      /static/{{APP_ID}}-controller.js /static/{{APP_ID}}-controller.js.map \
+#      /static/{{APP_ID}}-view.js /static/{{APP_ID}}-view.js.map \
+#      /app/<your-static-dir>/
+#
+# REQUIRED in .dockerignore, or a blanket `COPY src /app/src` bakes a local
+# node_modules and a possibly stale bundle over the CI build:
+#
+#   node_modules/
+#   node-compile-cache/
+#   <your-static-dir>/{{APP_ID}}-controller.js
+#   <your-static-dir>/{{APP_ID}}-controller.js.map
+#   <your-static-dir>/{{APP_ID}}-view.js
+#   <your-static-dir>/{{APP_ID}}-view.js.map

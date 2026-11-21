@@ -1,0 +1,17 @@
+{
+  "name": "{{APP_ID}}-adk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Symphony ADK controller + view bundles. Built into the server's static dir.",
+  "scripts": {
+    "build": "npm run build:controller && npm run build:view",
+    "build:controller": "esbuild controller.js --bundle --format=iife --platform=browser --target=es2020 --minify --sourcemap --outfile=../static/{{APP_ID}}-controller.js",
+    "build:view": "esbuild view.js --bundle --format=iife --platform=browser --target=es2020 --minify --sourcemap --outfile=../static/{{APP_ID}}-view.js"
+  },
+  "dependencies": {
+    "@symphony-ui/adk": "3.15.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

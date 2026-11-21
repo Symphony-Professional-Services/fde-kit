@@ -1,0 +1,23 @@
+{
+  "_comment": [
+    "Fetched CROSS-ORIGIN by the Symphony client from your host, so the response",
+    "must carry Access-Control-Allow-Origin. The `url` below is what actually",
+    "loads the controller frame -- bump its cache-buster when the controller",
+    "changes. `id` must equal appGroupId in the admin-portal bundle and the id",
+    "passed to ADK.start(). Delete this _comment key before shipping."
+  ],
+  "applications": [
+    {
+      "type": "sandbox",
+      "id": "{{APP_ID}}",
+      "name": "{{APP_NAME}}",
+      "title": "{{APP_TITLE}}",
+      "description": "{{APP_DESCRIPTION}}",
+      "blurb": "{{APP_DESCRIPTION}}",
+      "publisher": "{{PUBLISHER}}",
+      "url": "https://{{APP_HOST}}/app/controller.html?v={{VERSION}}",
+      "icon": "https://{{APP_HOST}}/app/icon.png",
+      "domain": "{{APP_HOST}}"
+    }
+  ]
+}
