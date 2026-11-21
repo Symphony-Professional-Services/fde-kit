@@ -1,0 +1,80 @@
+# Deployment additions for a Symphony extension app with Circle of Trust.
+# Merge these into your existing Deployment. Placeholders: {{APP_ID}} {{POD_HOST}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{APP_ID}}-server
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      # MUST be 0 while replicas is 1.
+      #
+      # With maxUnavailable: 1, Kubernetes may tear down the serving pod before the
+      # replacement is ready, so ANY startup failure (bad image, missing secret
+      # volume) becomes a full outage instead of a failed rollout that leaves the
+      # previous version serving. This one line is the difference between "the
+      # deploy failed" and "the app is down".
+      maxUnavailable: 0
+  template:
+    spec:
+      containers:
+        - name: {{APP_ID}}-server
+          env:
+            # The Symphony POD host -- serves /login/v1/... and /pod/v1/... .
+            # NOT your own ingress host, which does not serve those paths.
+            # Confusing the two is the most common CoT misconfiguration.
+            - name: SYMPHONY_POD_HOST
+              value: {{POD_HOST}}
+            # Must match appGroupId in the admin-portal bundle and ADK.start({id}).
+            - name: SYMPHONY_APP_ID
+              value: {{APP_ID}}
+            - name: SYMPHONY_APP_PRIVATE_KEY_PATH
+              value: /app/secrets/{{APP_ID}}-private-key.pem
+          volumeMounts:
+            - name: {{APP_ID}}-rsa
+              mountPath: /app/secrets
+              readOnly: true
+      volumes:
+        # ⚠️ NEVER add this volume without provisioning the secret in the SAME change.
+        # It is non-optional, so a missing secret leaves the pod in ContainerCreating
+        # indefinitely with:
+        #   MountVolume.SetUp failed ... secret "{{APP_ID}}-rsa" not found
+        # See workflow-snippet.yml for CI provisioning.
+        - name: {{APP_ID}}-rsa
+          secret:
+            secretName: {{APP_ID}}-rsa
+
+---
+# Gateway routing. The app's own API routes must be reachable, and they must NOT sit
+# under the static mount path -- a StaticFiles mount at /app shadows sibling paths,
+# which is why the Circle of Trust endpoints live at /api/v1/cot/... .
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: {{APP_ID}}-routes
+spec:
+  hostnames:
+    - "{{APP_HOST}}"
+  rules:
+    # Static app assets: controller.html, bundle.json, icon.png, built bundles.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /app
+      backendRefs:
+        - name: {{APP_ID}}-service
+          port: 80
+    # App APIs including /api/v1/cot/* .
+    # NOTE: /api/v1 is a very generic prefix on a shared gateway. If other teams
+    # publish routes on the same hostname, prefer a namespaced prefix to avoid
+    # conflicts, and confirm with `kubectl get httproute -A`.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1
+      backendRefs:
+        - name: {{APP_ID}}-service
+          port: 80

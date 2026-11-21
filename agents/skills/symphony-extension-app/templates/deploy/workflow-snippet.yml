@@ -1,0 +1,49 @@
+# CI provisioning for the Symphony app RSA key secret.
+# Merge into your deploy workflow. Placeholders: {{APP_ID}} {{RSA_SECRET_NAME}}
+#
+# The app RSA key is frequently the SAME key pair as the Symphony bot's -- check for
+# an existing CI secret before creating a new one, and confirm which GitHub
+# environment it lives in (environments are name-matched exactly).
+
+jobs:
+  deploy:
+    # The secret must be visible to this job: a repo secret works anywhere, an
+    # environment secret only when `environment:` matches its environment exactly.
+    environment: env
+
+    env:
+      # Raw PEM private key. Its public half must be registered as `rsaKey` in the
+      # admin-portal app bundle.
+      {{RSA_SECRET_NAME}}: ${{ secrets.{{RSA_SECRET_NAME}} }}
+
+    steps:
+      - name: Provision Symphony Circle of Trust RSA key secret
+        run: |-
+          # Fail loudly rather than deploying a pod that cannot mount its volume:
+          # the deployment mounts this secret non-optionally, so a missing value
+          # leaves the pod stuck in ContainerCreating with no logs to debug.
+          if [ -z "${{{RSA_SECRET_NAME}}}" ]; then
+            echo "ERROR: {{RSA_SECRET_NAME}} is empty or unset for this environment." >&2
+            echo "It must hold the raw PEM private key whose public half is the" >&2
+            echo "app bundle's rsaKey." >&2
+            exit 1
+          fi
+
+          # Newline-terminated: PEM parsers reject a file whose final -----END-----
+          # line has no trailing newline.
+          printf '%s\n' "${{{RSA_SECRET_NAME}}}" > /tmp/{{APP_ID}}-private-key.pem
+
+          # Catch a base64-wrapped or otherwise mangled value here, at deploy time,
+          # instead of as a runtime 502 from the CoT token endpoint.
+          if ! grep -q "BEGIN.*PRIVATE KEY" /tmp/{{APP_ID}}-private-key.pem; then
+            echo "ERROR: {{RSA_SECRET_NAME}} does not look like a PEM private key." >&2
+            echo "Expected a -----BEGIN PRIVATE KEY----- block." >&2
+            exit 1
+          fi
+
+          kubectl create secret generic {{APP_ID}}-rsa \
+            -n "${NAMESPACE}" \
+            --from-file={{APP_ID}}-private-key.pem=/tmp/{{APP_ID}}-private-key.pem \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          rm -f /tmp/{{APP_ID}}-private-key.pem

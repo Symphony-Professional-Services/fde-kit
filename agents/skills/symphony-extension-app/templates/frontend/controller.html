@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>{{APP_TITLE}} Extension Controller</title>
+  <!-- Explicit icon: otherwise the browser requests /favicon.ico, which 404s and
+       shows up as a spurious error against this page in the console. -->
+  <link rel="icon" href="/app/icon.png">
+</head>
+<body>
+  <!--
+    The built ADK controller bundle. ADK is bundled INTO this file -- nothing is
+    loaded from the pod. There is no pod-hosted symphony-api.js; do not add one.
+
+    Bump the cache-buster whenever the controller changes, and keep it in sync with
+    the `url` field in bundle.json, which is what the client actually loads.
+  -->
+  <script src="/app/{{APP_ID}}-controller.js?v={{VERSION}}"></script>
+</body>
+</html>
