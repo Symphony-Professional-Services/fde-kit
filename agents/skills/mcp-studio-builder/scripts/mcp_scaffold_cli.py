@@ -3,9 +3,9 @@
 
 100% Python 3.12 standard-library CLI for:
   1. Day-0 scaffolding of headless or Dual-Host A2UI v1.0 MCP servers using named presets
-     (`--preset minimal|studio-connector|interactive-app|enterprise-ha`) and 8 composable
+     (`--preset minimal|studio-connector|interactive-app|studio-agent|enterprise-ha`) and 11 composable
      feature packs (`--a2ui`, `--auth`, `--type`, `--db`, `--symphony-room`, `--redis`,
-     `--scheduler`, `--metrics [--otel]`, `--infra sps|sre`, `--secrets`).
+     `--scheduler`, `--metrics [--otel]`, `--studio-agent`, `--gcs`, `--pubsub`, `--infra sps|sre`, `--secrets`).
   2. Day-2 safe upgrades of managed runtime files via SHA-256 manifest diffing (`--sync-core`),
      coordinated with `scripts/mcp_ctl.py` on Schema v2 `.template-manifest.json`.
 """
@@ -63,7 +63,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--prefix", help="HTTP Gateway routing path prefix (e.g. /mcp/tradefeedr/v1)")
     parser.add_argument(
         "--preset",
-        choices=["minimal", "studio-connector", "interactive-app", "enterprise-ha"],
+        choices=["minimal", "studio-connector", "interactive-app", "studio-agent", "enterprise-ha"],
         default=None,
         help="Named starter preset (can be combined with explicit pack flags)",
     )
@@ -115,6 +115,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         default=False,
         help="With --metrics, enable optional OpenTelemetry [otel] OTLP span exporter extra",
+    )
+    parser.add_argument(
+        "--studio-agent",
+        dest="studio_agent",
+        action="store_true",
+        default=False,
+        help="Enable Symphony AI Agent Studio system prompt, manifest, profile tool & golden evals pack",
+    )
+    parser.add_argument(
+        "--gcs",
+        action="store_true",
+        default=False,
+        help="Enable Google Cloud Storage artifact upload & V4 Signed URL pack",
+    )
+    parser.add_argument(
+        "--pubsub",
+        choices=["none", "publisher", "push-webhook"],
+        default=None,
+        help="Enable Google Cloud Pub/Sub async event publisher (+ optional push webhook) pack",
     )
     parser.add_argument(
         "--infra",
@@ -268,13 +287,15 @@ def prompt_interactive(ctl: Any) -> dict[str, Any]:
         "  [1] minimal (Default)\n"
         "  [2] studio-connector (REST adapter + IDM JWT)\n"
         "  [3] interactive-app (A2UI + Symphony Room + Scheduler)\n"
-        "  [4] enterprise-ha (A2UI + IDM JWT + Postgres + Redis HA + Metrics + SRE)\n"
-        "Choose [1-4]: "
+        "  [4] studio-agent (Agent Studio prompt/manifest + IDM JWT + A2UI + evals)\n"
+        "  [5] enterprise-ha (A2UI + IDM JWT + Postgres + Redis HA + Metrics + SRE)\n"
+        "Choose [1-5]: "
     ).strip()
     preset = {
         "2": "studio-connector",
         "3": "interactive-app",
-        "4": "enterprise-ha",
+        "4": "studio-agent",
+        "5": "enterprise-ha",
     }.get(preset_choice, "minimal")
     target = input("Enter Target Scaffolding Directory [default: ./]: ").strip() or "./"
     secrets_raw = input("Custom secret env var names (comma-separated, optional): ").strip()
@@ -447,6 +468,12 @@ def _build_initial_profile(
     if args.otel:
         packs["metrics"] = True
         packs["otel"] = True
+    if args.studio_agent:
+        packs["studio_agent"] = True
+    if args.gcs:
+        packs["gcs"] = True
+    if args.pubsub is not None:
+        packs["pubsub"] = args.pubsub
 
     return {
         "name": name,
@@ -488,7 +515,7 @@ def main(argv: list[str] | None = None) -> None:
                 sys.stderr.write(f"Error: Invalid secret key '{cleaned_sec}'. Must match ^[A-Z][A-Z0-9_]*$.\n")
                 sys.exit(2)
 
-    wants_a2ui = bool(args.a2ui) or (args.preset in ("interactive-app", "enterprise-ha"))
+    wants_a2ui = bool(args.a2ui) or (args.preset in ("interactive-app", "studio-agent", "enterprise-ha"))
     template_dir, cleanup_temp = resolve_template_source(args.template_dir, require_a2ui=wants_a2ui)
     try:
         ctl = _load_mcp_ctl_module(template_dir)
@@ -501,7 +528,7 @@ def main(argv: list[str] | None = None) -> None:
             preset_override = cfg["preset"]
             target_dir = Path(cfg["target"])
             secrets_raw = cfg["secrets_raw"]
-            if preset_override in ("interactive-app", "enterprise-ha") and not (
+            if preset_override in ("interactive-app", "studio-agent", "enterprise-ha") and not (
                 template_dir / "src" / "extensions" / "a2ui"
             ).is_dir():
                 sys.stderr.write(

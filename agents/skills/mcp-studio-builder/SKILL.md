@@ -1,6 +1,6 @@
 ---
 name: mcp-studio-builder
-description: Scaffolds, configures, and upgrades custom MCP servers for Symphony Agent Studio using mcp_scaffold_cli.py (--preset, 8 composable packs, --infra sps|sre) and Day-2 mcp_ctl.py build-up/trim-down commands.
+description: Scaffolds, configures, and upgrades custom MCP servers for Symphony Agent Studio using mcp_scaffold_cli.py (--preset, 11 composable packs, --infra sps|sre) and Day-2 mcp_ctl.py build-up/trim-down commands.
 ---
 
 # Symphony Agent Studio MCP Server Scaffolder (`mcp-studio-builder`)
@@ -23,7 +23,7 @@ Always invoke `./scripts/mcp_scaffold_cli.py` in non-interactive mode rather tha
 python3 <path-to-skill-directory>/scripts/mcp_scaffold_cli.py \
   --name "<server-name>" \
   [--prefix "<path-prefix>"] \
-  [--preset "<minimal|studio-connector|interactive-app|enterprise-ha>"] \
+  [--preset "<minimal|studio-connector|interactive-app|studio-agent|enterprise-ha>"] \
   [--type "<direct|rest-adapter|mcp-bridge>"] \
   [--auth "<api-key|idm-jwt>"] \
   [--db "<none|postgres>"] \
@@ -31,6 +31,9 @@ python3 <path-to-skill-directory>/scripts/mcp_scaffold_cli.py \
   [--redis] \
   [--scheduler] \
   [--metrics [--otel]] \
+  [--studio-agent] \
+  [--gcs] \
+  [--pubsub "<none|publisher|push-webhook>"] \
   [--a2ui] \
   [--infra "<sps|sym-professional-services|sre>"] \
   [--secrets "API_TOKEN,DB_PASS"] \
@@ -39,16 +42,17 @@ python3 <path-to-skill-directory>/scripts/mcp_scaffold_cli.py \
   [--sync-core [--force]]
 ```
 
-### 4 Named Starter Presets (`--preset` / `uv run mcp-ctl preset <name>`)
+### 5 Named Starter Presets (`--preset` / `uv run mcp-ctl preset <name>`)
 
 | Preset | Included Packs & Target | Best For |
 | :--- | :--- | :--- |
 | **`minimal`** *(default)* | Headless core (`api-key` + showcase `example.py` `1 tool + 1 resource + 1 prompt` auto-pruned on first `add tool` / `add surface`, `sps`) | Fast single-purpose MCP tools & PoCs |
 | **`studio-connector`** | `adapter:rest` + `auth:idm-jwt` (`sps`) | Authenticated REST API connectors for Agent Studio |
 | **`interactive-app`** | `a2ui` + `symphony-room` (`rsa`) + `scheduler` (`sps`) | Rich Dual-Host A2UI v1.0 cards, room notifications, and async jobs |
+| **`studio-agent`** | `studio-agent` + `a2ui` + `auth:idm-jwt` (`sps`) | Turnkey Symphony AI Agent Studio agent + OBO auth + Dual-Host A2UI surfaces + golden evals |
 | **`enterprise-ha`** | `a2ui` + `auth:idm-jwt` + `db:postgres` + `redis` + `metrics` + `infra:sre` | Multi-replica (`replicas: 2`) enterprise SRE production rollouts |
 
-### All 8 Composable Feature Packs
+### All 11 Composable Feature Packs
 
 1. **`a2ui` (`--a2ui` / `mcp-ctl add a2ui`)**: Installs `src/extensions/a2ui/` + `web/adk/` + `scripts/{token_audit.py,tokens.json,verify_ui_dom.py}`, stamps `{name}-{controller,view}.js` (including internal `APP_ID`), generates `SURFACE_TOKEN_SECRET`, and enables `--extra a2ui`.
 2. **`auth` (`--auth idm-jwt` / `mcp-ctl add auth idm-jwt`)**: Generates `src/tools/auth_jwt.py` with least-privilege RBAC (`frozenset({"viewer"})` by default; `{"viewer", "operator"}` only on explicit write/operator/admin scopes or `IDM_DEFAULT_ROLE=operator`), `RS256,RS512,ES256` JWKS verification, `/.well-known/oauth-protected-resource`, and `--extra auth`.
@@ -58,6 +62,9 @@ python3 <path-to-skill-directory>/scripts/mcp_scaffold_cli.py \
 6. **`redis` (`--redis` / `mcp-ctl add redis`)**: Generates `src/tools/redis_ha.py` (`redis.asyncio` on `runtime.lifespan` + `PING` `/ready` probe), wires `configure_cache_backend`, conditionally wires `configure_external_state_backend` + atomic `GETDEL` `configure_external_cot_store` when A2UI is enabled, writes `docker-compose.redis.yml`, enables `--extra redis`, and scales K8s/SRE manifests to `replicas: 2`.
 7. **`scheduler` (`--scheduler` / `mcp-ctl add scheduler`)**: Generates zero-dep `src/tools/scheduler.py` with a stdlib 5-field cron matcher, `BackgroundJobRunner` for tasks exceeding Studio's `30s` limit (`submit_background_job`, `get_job_status`, `list_scheduled_jobs`), and optional A2UI `execution_progress` card rendering.
 8. **`metrics` (`--metrics [--otel]` / `mcp-ctl add metrics [--otel]`)**: Generates zero-dep `src/tools/metrics.py` mounting Prometheus `0.0.4` `GET /metrics`, injects K8s/SRE Prometheus scrape annotations, and optionally registers an OpenTelemetry OTLP span exporter via `register_span_hook` when `--otel` and `OTEL_EXPORTER_OTLP_ENDPOINT` are configured.
+9. **`studio-agent` (`--studio-agent` / `mcp-ctl add studio-agent`)**: Zero extra deps; generates `agent/system_prompt.md`, `agent/studio_manifest.json`, `src/tools/studio_agent.py` (`get_agent_profile`, `agent://studio/manifest`, `agent://studio/system-prompt`, `studio_agent_system_prompt`), `tests/evals/golden_cases.json`, and `tests/test_agent_evals.py` (validated via `MCP009` and `uv run mcp-ctl eval`).
+10. **`gcs` (`--gcs` / `mcp-ctl add gcs`)**: Generates `src/tools/gcs_storage.py` (`upload_gcs_artifact`, `get_gcs_signed_download_url`) with path-traversal rejection, operator RBAC, GKE Workload Identity IAM `signBlob` V4 Signed URLs (`--extra gcs`), and SPS/SRE `GCS_BUCKET_NAME` + IAM runbook wiring.
+11. **`pubsub` (`--pubsub publisher|push-webhook` / `mcp-ctl add pubsub [--push-webhook]`)**: Generates `src/tools/pubsub_events.py` (`publish_domain_event` with `correlation_id` + W3C `traceparent` attributes, `get_pubsub_status`, and optional `POST /api/v1/pubsub/push` `PUBSUB_PUSH_TOKEN` + `TTLCache` deduplication), `docker-compose.pubsub.yml`, and `--extra pubsub`.
 
 ---
 
@@ -70,7 +77,7 @@ Every scaffolded repository includes `scripts/mcp_ctl.py` and Schema v2 `.templa
 uv run mcp-ctl status [--json]
 
 # Apply a named preset on Day-2
-uv run mcp-ctl preset <minimal|studio-connector|interactive-app|enterprise-ha>
+uv run mcp-ctl preset <minimal|studio-connector|interactive-app|studio-agent|enterprise-ha>
 
 # Build up composable packs incrementally
 uv run mcp-ctl add a2ui
@@ -82,7 +89,13 @@ uv run mcp-ctl add symphony-room [--webhook]
 uv run mcp-ctl add redis
 uv run mcp-ctl add scheduler
 uv run mcp-ctl add metrics [--otel]
+uv run mcp-ctl add studio-agent
+uv run mcp-ctl add gcs
+uv run mcp-ctl add pubsub [--push-webhook]
 uv run mcp-ctl add secret API_TOKEN,DB_PASS
+
+# Run Agent Studio prompt, manifest & golden trajectory evaluations
+uv run mcp-ctl eval
 
 # Scaffold typed domain tools (auto-prunes unmodified example.py!) & custom A2UI surfaces
 uv run mcp-ctl add tool lookup_trade [--module trades] [--read-only|--mutating|--destructive] [--cached]

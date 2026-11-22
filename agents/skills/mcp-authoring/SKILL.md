@@ -196,7 +196,8 @@ uv run mcp-ctl call --tool example_template_tool --args '{"arg": "hello"}' --pri
 python3 scripts/mcp_call.py --resource "config://server/status"
 python3 scripts/mcp_call.py --prompt example_diagnostic_prompt --args '{"topic": "latency"}'
 
-# 3. Run the two-tier stdlib AST Studio-compatibility doctor (MCP001–MCP008)
+# 3. Run the two-tier stdlib AST Studio-compatibility doctor (MCP001–MCP009) & golden agent evals
 uv run mcp-ctl doctor            # ERROR tier fails (exit 1); WARN tier advises (exit 0)
 uv run mcp-ctl doctor --strict   # Promotes WARN tier (MCP005 raw env secrets, MCP007 missing annotations) to exit 1
+uv run mcp-ctl eval              # Runs tests/test_agent_evals.py when studio-agent pack is installed
 ```
